@@ -1,0 +1,815 @@
+/**
+ * 
+ */
+package com.example.pongqrcode;
+
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+
+
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Handler;
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+//import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.SimpleAdapter;
+import android.widget.Spinner;
+import android.widget.Toast;
+
+/**
+ * @author Pongwiiproject2014
+ *
+ */
+public class scanqrcode extends  ActionBarActivity  {
+	
+	ProgressDialog barProgressDialog;
+	Handler updateBarHandler;
+	public static final int DIALOG_DOWNLOAD_JSON_PROGRESS = 0;
+	@SuppressWarnings("unused")
+	private ProgressDialog mProgressDialog;
+	private ProgressDialog progressDialog;
+	 static	String rname = "";
+	
+	private Spinner status;
+	final String url1 = "http://192.168.56.1:80/php_checkscan_data.php";
+	final String url = "http://192.168.56.1:80/php_savecheck_data.php";
+	String result1 = "";
+	String result = "";
+	private AlertDialog.Builder ad;
+	
+	
+	public static final int REQUEST_QR_SCAN = 4;
+    EditText textContent1;
+    EditText textContent2;
+    EditText textContent3;
+    EditText Text_scanContent ;
+    EditText textscan;
+    EditText sCustomerID;
+	@SuppressLint("CutPasteId")
+	@Override
+	 protected void onCreate(Bundle savedInstanceState) {
+	        super.onCreate(savedInstanceState);
+	        setContentView(R.layout.scanqrcode);
+	        updateBarHandler = new Handler();
+	        //status = (Spinner)findViewById(R.id.spnstatus);
+	        //addliststatus();
+	        
+	        
+	        ad = new AlertDialog.Builder(this);
+	        Intent intent= getIntent();
+	    	rname = intent.getStringExtra("Username"); 
+	    	
+	    	
+	    	final Spinner spin = (Spinner)findViewById(R.id.spinner1);
+	    	
+	   	 String url = "http://192.168.56.1/php_selete_sub_data.php";
+		 
+			try {
+			 
+			 JSONArray data = new JSONArray(getJSONUrl(url));
+			 
+			 final ArrayList<HashMap<String, String>> MyArrList = new ArrayList<HashMap<String, String>>();
+			 HashMap<String, String> map;
+			 
+			 for(int i = 0; i < data.length(); i++){
+			 JSONObject c = data.getJSONObject(i);
+			 
+			 map = new HashMap<String, String>();
+			 map.put("subject_code", c.getString("subject_code"));
+			 map.put("subject_name", c.getString("subject_name"));
+			 map.put("credit_unit", c.getString("credit_unit"));
+			 MyArrList.add(map);
+			 
+			 }
+			 SimpleAdapter sAdap;
+			 sAdap = new SimpleAdapter(scanqrcode.this, MyArrList, R.layout.activity_column2,
+			
+			 new String[] {"subject_code","subject_name","credit_unit"}, new int[] {R.id.ColMemberID,R.id.ColName,R.id.Colset});     
+			 
+			 spin.setAdapter(sAdap);  
+			 
+			 
+			 
+			
+			String sCustomerID;
+			
+			 final AlertDialog.Builder viewDetail = new AlertDialog.Builder(this);
+			 
+			 spin.setOnItemSelectedListener(new OnItemSelectedListener() {
+			 
+			public void onItemSelected(AdapterView<?> arg0, View selectedItemView,
+			 int position, long id) {
+			 String sCustomerID = MyArrList.get(position).get("subject_code")
+			 .toString();
+			 
+			 
+			
+			 String sName = MyArrList.get(position).get("subject_name")
+			 .toString();
+			 String sTel = MyArrList.get(position).get("credit_unit")
+			 .toString();
+			 
+			
+			 
+			 viewDetail.setIcon(android.R.drawable.btn_star_big_on);
+			 viewDetail.setTitle("Customer Detail");
+			 viewDetail.setMessage("รหัสวิชา : " + sCustomerID + "\n"
+			 + "ชื่อวิชา  : " + sName + "\n" + " หน่วยกิต : " + sTel);
+			 viewDetail.setPositiveButton("OK",
+			 new DialogInterface.OnClickListener() {
+				 
+				 
+				 
+			 public void onClick(DialogInterface dialog,
+			 int which) {
+				 
+				 
+				 
+			 // TODO Auto-generated method stub
+				 
+				 /*
+					if(textContent1.getText().toString().equals("")||sCustomerID.toString().length() <=1)
+				   	{
+				   		ad.setTitle("Error! ");
+						ad.setIcon(android.R.drawable.btn_star_big_on); 
+						ad.setPositiveButton("Close", null);
+						ad.setMessage("เลขรหัสวิชาไม่ถูกต้อง!");
+						ad.show();  
+				   	}
+					else {
+						
+						
+						ad.setTitle("Yes! ");
+						ad.setIcon(android.R.drawable.btn_star_big_on); 
+						ad.setPositiveButton("Close", null);
+						ad.setMessage("เลขรหัสวิชาถูกต้อง!");
+						ad.show();  
+					}
+	               	*/	
+			 dialog.dismiss();
+			 }
+			 });
+			 viewDetail.show();
+			 
+			 
+			
+                  	 
+		
+			   	
+			 }
+			 
+			public void onNothingSelected(AdapterView<?> arg0) {
+			 // TODO Auto-generated method stub
+			 Toast.makeText(scanqrcode.this,
+			 "Your Selected : Nothing",
+			 Toast.LENGTH_SHORT).show();
+			 }
+			 });
+			 
+			 } catch (JSONException e) {
+			 // TODO Auto-generated catch block
+			 e.printStackTrace();
+			 }
+			 
+			
+			 
+		    
+			 
+	    
+	        Button bt_exit = (Button) findViewById(R.id.bt_selete2);
+			bt_exit.setOnClickListener(new OnClickListener() {
+
+		       
+		        @Override
+				public void onClick(View arg0) {
+		        	 Intent newActivity = new Intent(scanqrcode.this,genecode.class);
+	    				
+	    				 startActivity(newActivity);
+
+		        }
+		    });
+		
+	     
+	        textContent1 = (EditText)findViewById(R.id.Text_scan_number);
+	        
+	        textContent2 = (EditText)findViewById(R.id.Text_scan_codestudent);
+	        textContent3 = (EditText)findViewById(R.id.Text_scan_set);
+	        Text_scanContent = (EditText)findViewById(R.id.Text_scan);
+	       
+	        
+	       // final EditText txtUser = (EditText)findViewById(R.id.editext_username); 
+	       // textContent = (TextView)findViewById(R.id.txt_name);
+	        Button cmd = (Button) findViewById(R.id.bt_scancode);
+	        cmd.setOnClickListener(new View.OnClickListener() {
+				
+				
+				  @Override
+				public void onClick(View v) {   
+					  
+					  
+					  
+	                Intent intent = 
+	                        new Intent("com.google.zxing.client.android.SCAN");
+	                startActivityForResult(Intent.createChooser(intent
+	                        , "Scan with"), REQUEST_QR_SCAN);
+	            }
+	        });
+	        
+	        
+	     
+	    	
+	 
+	    	Button bt_check = (Button) findViewById(R.id.bt_check);
+	    	bt_check.setOnClickListener(new OnClickListener() {
+
+	    			@SuppressWarnings("unused")
+					@Override
+	    			public void onClick(View arg0) {
+	    				
+	    				
+	    				
+	    				progressDialog = ProgressDialog.show(scanqrcode.this, "", "Loading...");
+
+	    				new Thread() {
+
+	    				@Override
+	    				public void run() {
+
+	    				try{
+
+	    				sleep(1000);
+
+	    				} catch (Exception e) {
+
+	    					Toast.makeText(scanqrcode.this, e.getMessage(),
+	    							Toast.LENGTH_LONG).show();
+	    					Log.e("tag", e.getMessage());
+
+	    				}
+
+	    				// dismiss the progress dialog
+
+	    				progressDialog.dismiss();
+
+	    				}
+
+	    				}.start();
+	    				
+	    				
+	    				 checkscan();
+	    				 WebPageTask1 task2 = new WebPageTask1();
+	                     task2.execute();
+	                     
+	                  
+	                     
+	    					}
+	    			
+	    				
+	    				
+	    			
+	    		});
+	
+	    	
+	
+	    	Button bt_savecheck = (Button) findViewById(R.id.btnrec);
+	    	bt_savecheck.setOnClickListener(new OnClickListener() {
+
+	    			public void onClick(View arg0) {
+	    				
+	    				
+	    				//WebPageTask1 task = new WebPageTask1();
+	    				//task.execute();
+	    				progressDialog = ProgressDialog.show(scanqrcode.this, "", "Loading...");
+
+	    				new Thread() {
+
+	    				@Override
+	    				public void run() {
+
+	    				try{
+
+	    				sleep(1000);
+
+	    				} catch (Exception e) {
+
+	    					Toast.makeText(scanqrcode.this, e.getMessage(),
+	    							Toast.LENGTH_LONG).show();
+	    					Log.e("tag", e.getMessage());
+
+	    				}
+
+	    				// dismiss the progress dialog
+	    					
+	    				progressDialog.dismiss();
+
+	    				}
+
+	    				}.start();
+	    				
+	    				
+	    				 
+	    				if(textContent1.getText().toString() .equals(sCustomerID) || sCustomerID.getText().toString().length()<=3)
+	                   	{
+	                   		ad.setTitle("Error! ");
+	        				ad.setIcon(android.R.drawable.btn_star_big_on); 
+	        				ad.setPositiveButton("Close", null);
+	        				ad.setMessage("เลขรหัสววิชาไม่ถูกต้อง!");
+	        				ad.show();  
+	        				
+	                   	}
+	    				
+	    				
+	    				
+	    			
+	    				/*
+	    				if(textContent1.getText().toString().equals("")||textContent1.getText().toString().length()<=1)
+	                   	{
+	                   		ad.setTitle("Error! ");
+	        				ad.setIcon(android.R.drawable.btn_star_big_on); 
+	        				ad.setPositiveButton("Close", null);
+	        				ad.setMessage("กรอกเลขรหัสวิชาไม่ถูกต้อง!");
+	        				ad.show();  
+	        				
+	        				
+	                   	}
+	    				*/
+	        				else if(textContent2.getText().toString().equals("")||textContent2.getText().toString().length()<1)
+		                   	{
+		                   		ad.setTitle("Error! ");
+		        				ad.setIcon(android.R.drawable.btn_star_big_on); 
+		        				ad.setPositiveButton("Close", null);
+		        				ad.setMessage("กรอกเลขรหัสนิสิตไม่ถูกต้อง!");
+		        				ad.show();  
+		                   	}
+		        				
+		        				else if(textContent3.getText().toString().equals("")||textContent3.getText().toString().length()<1)
+			                   	{
+			                   		ad.setTitle("Error! ");
+			        				ad.setIcon(android.R.drawable.btn_star_big_on); 
+			        				ad.setPositiveButton("Close", null);
+			        				ad.setMessage("กรอกหมุ่ไม่ถูกต้อง!");
+			        				ad.show();  
+	        				
+	                   	}else{
+	                   		
+	                   	 
+	    				//String str =  Text_scanContent.getText().toString();
+	    	     		//String bb= str.substring(0, 3);
+	    	     		//textContent1.setText(bb);
+	                   		scanchecksave();
+	    				 WebPageTask task1 = new WebPageTask();
+	                     task1.execute();
+	    			}
+	    					}});
+		
+	    	
+	    	
+	
+     
+  }
+	
+	/*
+	public String scancheckstu() {
+	if(textContent1.getText().toString().equals("")||textContent1.getText().toString().length()<=1)
+   	{
+   		ad.setTitle("Error! ");
+		ad.setIcon(android.R.drawable.btn_star_big_on); 
+		ad.setPositiveButton("Close", null);
+		ad.setMessage("กรอกเลขรหัสวิชาไม่ถูกต้อง!");
+		ad.show();  
+   	}
+	return result;
+   	}
+   	*/
+   
+	//code เช็คชื่อ
+	
+	
+	
+	private JSONArray gettext() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public String scanchecksave() {
+		EditText textContent1 = (EditText)findViewById(R.id.Text_scan_number);
+        
+		EditText textContent2 = (EditText)findViewById(R.id.Text_scan_codestudent);
+		EditText textContent3 = (EditText)findViewById(R.id.Text_scan_set);
+		
+		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+		
+	
+	
+		 nameValuePairs.add(new BasicNameValuePair("isAdd","true"));
+
+	        nameValuePairs.add(new BasicNameValuePair("subject_code",textContent1
+	                .getText().toString()));
+	     
+	       
+	        nameValuePairs.add(new BasicNameValuePair("student_code", textContent2
+	                .getText().toString()));
+	        nameValuePairs.add(new BasicNameValuePair("group", textContent3
+	                .getText().toString()));
+	       // nameValuePairs.add(new BasicNameValuePair("status",textscan
+	              //  .getText().toString()));
+
+	      
+	      
+		
+
+	        // Check Username
+	        
+	        
+	       
+	        
+
+	       
+		
+	
+				
+		return postData(url, nameValuePairs);
+	}
+	
+		
+		
+	public String checkscan() {
+		EditText textContent1 = (EditText)findViewById(R.id.Text_scan_number);
+        
+		EditText textContent2 = (EditText)findViewById(R.id.Text_scan_codestudent);
+		EditText textContent3 = (EditText)findViewById(R.id.Text_scan_set);
+		//EditText Text_scanContent = (EditText)findViewById(R.id.Text_scan);  //ข้อความที่สแกนได้
+        
+        
+	
+        
+        
+       
+        
+		//EditText editext_lastname = (EditText) findViewById(R.id.edittext_lastname);
+		//EditText editext_email = (EditText) findViewById(R.id.edittext_email);
+		//EditText editext_phone = (EditText) findViewById(R.id.edittext_phone);
+		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+		
+
+	
+		 //nameValuePairs.add(new BasicNameValuePair("isAdd","true"));
+
+	        nameValuePairs.add(new BasicNameValuePair("subject_code",textContent1
+	                .getText().toString()));
+	     
+	       
+	        nameValuePairs.add(new BasicNameValuePair("student_code", textContent2
+	                .getText().toString()));
+	        nameValuePairs.add(new BasicNameValuePair("group", textContent3
+	                .getText().toString()));
+	    
+	      
+
+		return postData1(url1, nameValuePairs);
+	}
+
+		
+
+	public String postData (String url, List<NameValuePair> nameValuePairs) {
+
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpPost httppost = new HttpPost(url);
+		BufferedReader in = null;
+		try {
+			httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			HttpResponse response = httpclient.execute(httppost);
+			in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			StringBuffer sb = new StringBuffer("");
+			String line = "";
+			String NL = System.getProperty("line.separator");
+			while ((line = in.readLine()) != null) {
+				sb.append(line + NL);
+			}
+			in.close();
+			String page = sb.toString();
+			return page;
+
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			Toast.makeText(scanqrcode.this, e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			
+			Toast.makeText(scanqrcode.this, e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
+		return null;
+}
+			
+			
+		
+		
+	public String postData1 (String url1, List<NameValuePair> nameValuePairs) {
+
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpPost httppost = new HttpPost(url1);
+		BufferedReader in = null;
+		try {
+			httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			HttpResponse response = httpclient.execute(httppost);
+			in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			StringBuffer sb = new StringBuffer("");
+			String line = "";
+			String NL = System.getProperty("line.separator");
+			while ((line = in.readLine()) != null) {
+				sb.append(line + NL);
+			}
+			in.close();
+			String page = sb.toString();
+			return page;
+
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			Toast.makeText(scanqrcode.this, e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			
+			Toast.makeText(scanqrcode.this, e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
+		return null;
+}
+
+		
+	
+		
+		
+		
+		private class WebPageTask extends AsyncTask<Void, Void, String> {
+			@Override
+			protected String doInBackground(Void... param) {
+				result1 = scanchecksave();
+				return result1;
+				
+				
+			}
+			@Override
+			protected void onPostExecute(String result) {
+				if (result.trim().equals("OK1")) {
+					Toast.makeText(scanqrcode.this, "  Fail .",
+							Toast.LENGTH_LONG).show();
+					   //Intent it= new Intent (getApplicationContext(),showall_main.class);
+    	  				//startActivity(it);
+					
+					
+					
+				} else {
+					Toast.makeText(scanqrcode.this, " Success   .",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}
+		
+		private class WebPageTask1 extends AsyncTask<Void, Void, String> {
+			@Override
+			protected String doInBackground(Void... param) {
+				result = checkscan();
+				return result;
+				
+				
+			}
+			@Override
+			protected void onPostExecute(String result) {
+				if (result.trim().equals("OK2")) {
+					
+					
+					
+					Toast.makeText(scanqrcode.this, "Check  Success .",
+							Toast.LENGTH_LONG).show();
+					   //Intent it= new Intent (getApplicationContext(),showall_main.class);
+    	  				//startActivity(it);
+					
+					
+					
+				} else {
+					Toast.makeText(scanqrcode.this, "Check  Fail .",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}
+		
+		 
+		@Override
+		public boolean onCreateOptionsMenu(Menu menu) {
+			// Inflate the menu; this adds items to the action bar if it is present.
+			getMenuInflater().inflate(R.menu.main, menu);
+			return true;
+		}
+
+		@Override
+		public boolean onOptionsItemSelected(MenuItem item) {
+			// Handle action bar item clicks here. The action bar will
+			// automatically handle clicks on the Home/Up button, so long
+			// as you specify a parent activity in AndroidManifest.xml.
+			int id = item.getItemId();
+			if (id == R.id.action_settings) {
+				return true;
+			}
+			return super.onOptionsItemSelected(item);
+		}
+	
+	        	
+	        	
+	        
+				
+				/*
+				  public void onClick(View v) {                
+	               EditText check = (EditText) findViewById(R.id.Text_scan);
+	               Toast.makeText(scanqrcode.this,"You scan This : "+ check.getText(),Toast.LENGTH_SHORT)
+	               .show();
+	               TextView  tv_res1 = (TextView)findViewById(R.id.txt_showqrcode); 
+	             
+	               tv_res1.setText(""+check.getText());
+	              // tv_res1.append("in "+check);
+	            }
+	        });
+	        
+	        */
+		public static boolean isNetworkAvailable(Context ctx) {
+			ConnectivityManager connMgr = (ConnectivityManager)ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+			if(connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected() ||
+			    connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).isConnected()){
+			        return true;
+			}
+
+			return false;
+			 } 
+		
+
+		
+		
+		public boolean isOnline() {
+		    ConnectivityManager cm =
+		        (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		    NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		    return netInfo != null && netInfo.isConnectedOrConnecting();
+		}
+		   
+		
+
+		//final Spinner spin = (Spinner)findViewById(R.id.spinner1);
+		 
+	
+		
+		 
+		
+		
+
+	 //@Override
+	public void onActivityResult(int requestCode, int resultCode
+             , Intent intent) {
+		 
+		 
+		 
+     if (requestCode == REQUEST_QR_SCAN && resultCode == RESULT_OK) {
+         String contents1 = intent.getStringExtra("SCAN_RESULT");
+         Text_scanContent.setText(contents1);
+         
+         String[] token = contents1.split("\\,");
+         textContent1.setText(token[0]);
+         textContent2.setText(token[1]);
+         textContent3.setText(token[2]);
+         
+         /*
+	     	String str =  Text_scanContent.getText().toString();
+	     		String bb= str.substring(0,7);
+	     		textContent1.setText(bb);
+	     		
+	     		String str1 =  Text_scanContent.getText().toString();
+	     		String bb1= str1.substring(8,18);
+	     		textContent2.setText(bb1);
+	     		
+	     		
+	     		String str2 =  Text_scanContent.getText().toString();
+	     		String bb2= str2.substring(19,21);
+	     		textContent3.setText(bb2);
+     		
+     		*/
+     		//String str =  Text_scanContent.getText().toString();
+     		//String bb= contents1.substring(3);
+     		//textContent1.setText(bb);
+		}
+      
+	 }
+	 
+	
+	
+	public String getJSONUrl(String url) {
+		 StringBuilder str = new StringBuilder();
+		 HttpClient client = new DefaultHttpClient();
+		 HttpGet httpGet = new HttpGet(url);
+		 try {
+		 HttpResponse response = client.execute(httpGet);
+		 StatusLine statusLine = response.getStatusLine();
+		 int statusCode = statusLine.getStatusCode();
+		 if (statusCode == 200) { // Download OK
+		 HttpEntity entity = response.getEntity();
+		 InputStream content = entity.getContent();
+		 BufferedReader reader = new BufferedReader(new InputStreamReader(content));
+		 String line;
+		 while ((line = reader.readLine()) != null) {
+		 str.append(line);
+		 }
+		 } else {
+		 Log.e("Log", "Failed to download result..");
+		 }
+		 } catch (ClientProtocolException e) {
+		 e.printStackTrace();
+		 } catch (IOException e) {
+		 e.printStackTrace();
+		 }
+		 
+		 return str.toString();
+		 }
+     @Override
+	public void onBackPressed() {
+		 
+	        AlertDialog.Builder alertDialog = new AlertDialog.Builder(scanqrcode.this);
+	 
+	        alertDialog.setTitle("Confirm Exit...");
+	        alertDialog.setMessage("คุณต้องการออกจากโปรแกรมหรือไม่ ?");
+	        alertDialog.setIcon(R.drawable.ic_launcher);
+	 
+	        alertDialog.setPositiveButton("ใช่",
+	                new DialogInterface.OnClickListener() {
+	                    @Override
+						public void onClick(DialogInterface dialog,int which) {
+	                        //คลิกใช่ ออกจากโปรแกรม
+	                        finish();
+	                        scanqrcode.super.onBackPressed();
+	                    }
+	                });
+	 
+	        alertDialog.setNegativeButton("ไม่",
+	                new DialogInterface.OnClickListener() {
+	                    @Override
+						public void onClick(DialogInterface dialog,    int which) {
+	                        //คลิกไม่ cancel dialog
+	                        dialog.cancel();
+	                    }
+	                });
+	 
+	        alertDialog.show();
+	 
+	    
+	 
+ }
+	
+	 
+	 
+	 
+	 
+	 
+	 
+}
